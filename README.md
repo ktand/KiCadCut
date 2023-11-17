@@ -18,9 +18,6 @@ git submodule update --init --recursive
 also install
 
 ```
-pip install PyUsb
-```
-```
 pip install FPDF
 ```
 
@@ -30,14 +27,3 @@ pip install FPDF
 ```
 kicadcut <kicad_pcb_file> <layer> >file.out
 ```
-
-### Send to Silhouette
-```
-file2silhouette <cutfile>
-```
-
-## Requirements on Windows
-
-file2silhouette requires:
-- UsbDk to be installed (https://github.com/daynix/UsbDk)
-- libusb-1.0.dll to be copied to C:\Windows\System32 (https://libusb.info/)
