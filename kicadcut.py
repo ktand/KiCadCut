@@ -7,6 +7,7 @@ import optimize
 import math
 from kicad_parser import KicadPCB
 
+output_file = sys.stdout
 offset = (10, 10)
 border = (10, 10)
 matrix = (1, 0, 0, 1)
@@ -17,11 +18,15 @@ input_filename = ''
 input_layer = ''
 media_size = (12*25.4, 12*25.4)
 theta = 0
-shrink = 0.05
+shrinkabs = 0.05
+shrinkrel = 0.0
 comp = 0.05
 pdf = False
 filters = []
 orientation = 0
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 def rotate(origin, point, angle):
     """
@@ -43,7 +48,7 @@ def get_reference(footprint):
             return t[1].strip('\"')
     return None
 
-def parse_file(file, _filters, _shrink):
+def parse_file(file, layer, _filters, _shrinkabs, _shrinkrel):
     pcb = KicadPCB.load(file)
 
     footprints = pcb.footprint if len(pcb.footprint) else pcb.module
@@ -65,13 +70,13 @@ def parse_file(file, _filters, _shrink):
             pad_type = p[1]
             # shape = p[2]
             layers = [x.strip('\"') for x in p.layers]
-            if pad_type == 'smd' and input_layer in layers:
+            if pad_type == 'smd' and layer in layers:
                 at = p.at
                 size = p.size
                 center_x = footprint_center_x + at[0]
                 center_y = footprint_center_y + at[1]
-                width = size[0] - _shrink
-                height = size[1] - _shrink
+                width = size[0] - _shrinkabs - size[0] * _shrinkrel
+                height = size[1] - _shrinkabs - size[1] * _shrinkrel
 
                 if width > 0 and height > 0:
                     top_left = (center_x - width / 2, center_y - height / 2)
@@ -109,7 +114,10 @@ def strings(str_strings):
 argc = 1
 while argc < len(sys.argv):
     arg = sys.argv[argc]
-    if arg == '--offset':
+    if arg == '--file':
+        output_file = open(sys.argv[argc + 1], "w")
+        argc = argc + 2
+    elif arg == '--offset':
         offset = floats(sys.argv[argc + 1])
         argc = argc + 2
     elif arg == '--border':
@@ -134,8 +142,11 @@ while argc < len(sys.argv):
     elif arg == '--rotate':
         theta = float(sys.argv[argc + 1])
         argc = argc + 2
-    elif arg == '--shrink':
-        shrink = float(sys.argv[argc + 1])
+    elif arg == '--shrink_abs':
+        shrinkabs = float(sys.argv[argc + 1])
+        argc = argc + 2
+    elif arg == '--shrink_rel':
+        shrinkrel = float(sys.argv[argc + 1]) / 100
         argc = argc + 2
     elif arg == '--pdf':
         pdf = True
@@ -157,30 +168,34 @@ while argc < len(sys.argv):
         argc = argc + 1
 
 if not input_filename and not input_layer:
-    print('usage: kicadcut [options] <filename> <layer>')
-    print()
-    print(' --offset {x},{y}\t\tOffset stencil by x and y in mm.')
-    print(' --border {h},{v}\t\tCut a border around stencil using the specified horizontal and vertical margin')
-    print(' --matrix {a},{b},{c},{d}\tLinear map (to correct spatial miscalibration)')
-    print(' --speed {s}[,{s}]\t\tSpeed for each pass')
-    print(' --force {f}[,{f}]\t\tForce for each pass')
-    print(' --cut_mode {mode}\t\t0 = Precise, 1 = Fast')
-    print(' --media {w},{h}\t\tMedia width and height in mm')
-    print(' --rotate {theta}\t\tRotate cut')
-    print(' --shrink {l}\t\t\tShrink pads in x and y direction by amount specified in mm')
-    print(' --pdf\t\t\t\tGenerate PDF of the stencil')
-    print(' --filter {f}[,{f}]\t\tFilter components to include in stencil by reference. Wildcards (* and ?) can be used')
-    print(' --comp {l}\t\t\tOvercut compensation length adjustment in mm')
-    print(' --orientation {o}\t\tSet orientation (0 = portrait, 1 = landscape)')
+    eprint('usage: kicadcut [options] <filename> <layer>')
+    eprint()
+    eprint(' --out {file}\t\t\t\tWrite to file instead of stdout')
+    eprint(' --offset {x},{y}\t\t\tOffset stencil by x and y in mm.')
+    eprint(' --border {h},{v}\t\t\tCut a border around stencil using the specified horizontal and vertical margin')
+    eprint(' --matrix {a},{b},{c},{d}\t\tLinear map (to correct spatial miscalibration)')
+    eprint(' --speed {s}[,{s}]\t\t\tSpeed for each pass')
+    eprint(' --force {f}[,{f}]\t\t\tForce for each pass')
+    eprint(' --cut_mode {mode}\t\t\t0 = Precise, 1 = Fast')
+    eprint(' --media {w},{h}\t\t\tMedia width and height in mm')
+    eprint(' --rotate {ange}\t\t\tRotate cut by the specified angle in degrees')
+    eprint(' --shrink_abs {l}\t\t\tShrink pad width/height by absolute amount specified in mm')
+    eprint(' --shrink_rel {l}\t\t\tShrink pad width/height by relative amount specified in %')
+    eprint(' --filter {f}[,{f}]\t\t\tFilter components to include in stencil by reference. Wildcards (* and ?) can be used')
+    eprint(' --comp {l}\t\t\t\tOvercut compensation length adjustment in mm')
+    eprint(' --orientation {o}\t\t\tSet orientation (0 = portrait, 1 = landscape)')
+    eprint(' --pdf\t\t\t\t\tGenerate PDF of the stencil')
     sys.exit(1)
 
-strokes = parse_file(input_filename, filters, shrink)
+strokes = parse_file(input_filename, input_layer, filters, shrinkabs, shrinkrel)
 
 if len(strokes) == 0:
-    print('error: no pads found')
+    eprint('Error: no pads found')
     sys.exit(1)
 
-g = graphtec.graphtec(orientation, comp)
+eprint('File parsed: {} pads will be cut'.format(len(strokes)))
+
+g = graphtec.graphtec(output_file, orientation, comp)
 
 g.set(media_size=media_size)
 g.set(offset=(offset[0] + border[0] + 10, offset[1] + border[1]))

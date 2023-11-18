@@ -6,8 +6,8 @@ import sys
 import math
 
 class graphtec:
-  def __init__(self, orientation, comp_dist):
-    self.fd = sys.stdout
+  def __init__(self, file, orientation, comp_dist):
+    self.fd = file
     self.scale = 20 # mm to Silhouette unit 
     self.offset = (100,10)
     self.matrix = (1,0,0,1)
