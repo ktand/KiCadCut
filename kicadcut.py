@@ -59,7 +59,7 @@ def parse_file(file, layer, _filters, _shrinkabs, _shrinkrel):
         at = footprint.at
         footprint_center_x = at[0]
         footprint_center_y = at[1]
-        footprint_angle = math.radians(at[2]) if len(at) > 2 else 0
+        footprint_angle = (math.radians(at[2]) if len(at) > 2 else 0) - math.radians(180)
 
         reference = get_reference(footprint)
 
@@ -75,6 +75,8 @@ def parse_file(file, layer, _filters, _shrinkabs, _shrinkrel):
                 size = p.size
                 center_x = footprint_center_x + at[0]
                 center_y = footprint_center_y + at[1]
+                pad_angle = (math.radians(at[2]) if len(at) > 2 else 0)  - math.radians(180)
+                
                 width = size[0] - _shrinkabs - size[0] * _shrinkrel
                 height = size[1] - _shrinkabs - size[1] * _shrinkrel
 
@@ -84,6 +86,11 @@ def parse_file(file, layer, _filters, _shrinkabs, _shrinkrel):
                     bottom_left = (center_x - width / 2, center_y + height / 2)
                     bottom_right = (center_x + width / 2, center_y + height / 2)
 
+                    top_left = rotate((center_x, center_y), top_left, footprint_angle-pad_angle)
+                    top_right = rotate((center_x, center_y), top_right, footprint_angle-pad_angle)
+                    bottom_left = rotate((center_x, center_y), bottom_left, footprint_angle-pad_angle)
+                    bottom_right = rotate((center_x, center_y), bottom_right,footprint_angle-pad_angle)
+                        
                     top_left = rotate((footprint_center_x, footprint_center_y), top_left, footprint_angle)
                     top_right = rotate((footprint_center_x, footprint_center_y), top_right, footprint_angle)
                     bottom_left = rotate((footprint_center_x, footprint_center_y), bottom_left, footprint_angle)
@@ -170,7 +177,6 @@ while argc < len(sys.argv):
 if not input_filename and not input_layer:
     eprint('usage: kicadcut [options] <filename> <layer>')
     eprint()
-    eprint(' --out {file}\t\t\t\tWrite to file instead of stdout')
     eprint(' --offset {x},{y}\t\t\tOffset stencil by x and y in mm.')
     eprint(' --border {h},{v}\t\t\tCut a border around stencil using the specified horizontal and vertical margin')
     eprint(' --matrix {a},{b},{c},{d}\t\tLinear map (to correct spatial miscalibration)')
@@ -193,7 +199,6 @@ if len(strokes) == 0:
     eprint('Error: no pads found')
     sys.exit(1)
 
-eprint('File parsed: {} pads will be cut'.format(len(strokes)))
 
 g = graphtec.graphtec(output_file, orientation, comp)
 
@@ -206,6 +211,8 @@ g.start()
 strokes = optimize.rotate(strokes, theta)
 strokes = optimize.justify(strokes)
 max_x, max_y = optimize.max_extent(strokes)
+
+eprint('File parsed: {} pads will be cut. Stencil width {:.1f}mm, height: {:.1f}mm'.format(len(strokes), max_x+2*border[0], max_y+2*border[1]))
 
 border_path = [
     (-border[0], -border[1]),
@@ -243,7 +250,7 @@ if pdf:
     pdf.set_author("https://github.com/ktand/Kicadcut")
     pdf.set_title(input_filename)
     pdf.set_subject(input_layer)
-    pdf.set_producer("FPDF {}".format(FPDF_VERSION))
+    # pdf.set_producer("FPDF {}".format(FPDF_VERSION))
 
     lines = optimize.optimize(strokes, border)
 
@@ -251,7 +258,9 @@ if pdf:
         [x1 + offset[0] + border[0] + 10, y1 + offset[1] + border[1], x2 + offset[0] + border[0]  + 10, y2 + offset[1] + border[1]] for x1, y1, x2, y2 in lines]
 
     for arg in offset_lines:
-        pdf.line(arg[0], arg[1], arg[2], arg[3])
+        dx1,dy1,dx2,dy2 = g.comp(arg[0], arg[1], arg[2], arg[3])
+        pdf.line(arg[0]+dx1, arg[1]+dy1, arg[2]+dx2, arg[3]+dy2)
+        # pdf.line(arg[0], arg[1], arg[2], arg[3])
 
     if border[0] != 0 or border[1] != 0:
         offset_border = [[x + offset[0] + border[0] + 10, y + offset[1] + border[1]] for x, y in border_path]
