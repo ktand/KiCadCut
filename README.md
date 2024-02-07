@@ -27,3 +27,7 @@ pip install FPDF
 ```
 kicadcut <kicad_pcb_file> <layer> >file.out
 ```
+
+### Cuttning blade settings
+
+For a 0.11mm film it appears that a blade setting of 0.15-0.17mm works fine for a 35 degree blade.

@@ -20,7 +20,7 @@ media_size = (12*25.4, 12*25.4)
 theta = 0
 shrinkabs = 0.05
 shrinkrel = 0.0
-comp = 0.03
+comp = 0.02
 pdf = False
 filters = []
 orientation = 0
@@ -177,19 +177,19 @@ while argc < len(sys.argv):
 if not input_filename and not input_layer:
     eprint('usage: kicadcut [options] <filename> <layer>')
     eprint()
-    eprint(' --offset {x},{y}\t\t\tOffset stencil by x and y in mm.')
-    eprint(' --border {h},{v}\t\t\tCut a border around stencil using the specified horizontal and vertical margin')
-    eprint(' --matrix {a},{b},{c},{d}\t\tLinear map (to correct spatial miscalibration)')
-    eprint(' --speed {s}[,{s}]\t\t\tSpeed for each pass')
-    eprint(' --force {f}[,{f}]\t\t\tForce for each pass')
-    eprint(' --cut_mode {mode}\t\t\t0 = Precise, 1 = Fast')
-    eprint(' --media {w},{h}\t\t\tMedia width and height in mm')
-    eprint(' --rotate {ange}\t\t\tRotate cut by the specified angle in degrees')
-    eprint(' --shrink_abs {l}\t\t\tShrink pad width/height by absolute amount specified in mm')
-    eprint(' --shrink_rel {l}\t\t\tShrink pad width/height by relative amount specified in %')
+    eprint(' --offset {{x}},{{y}}\t\t\tOffset stencil by x and y in mm. Default: {}.'.format(offset))
+    eprint(' --border {{h}},{{v}}\t\t\tCut a border around stencil using the specified horizontal and vertical margin. Default: {}.'.format(border))
+    eprint(' --matrix {{a}},{{b}},{{c}},{{d}}\t\tLinear map (to correct spatial miscalibration). Default: {}.'.format(matrix))
+    eprint(' --speed {{s}}[,{{s}}]\t\t\tSpeed for each pass. Default: {}.'.format(speed))
+    eprint(' --force {{f}}[,{{f}}]\t\t\tForce for each pass. Default: {}.'.format(force))
+    eprint(' --cut_mode {{mode}}\t\t\t0 = Precise, 1 = Fast. Default: {}.'.format(cut_mode))
+    eprint(' --media {{w}},{{h}}\t\t\tMedia width and height in mm. Default: {}.'.format(media_size))
+    eprint(' --rotate {{angle}}\t\t\tRotate cut by the specified angle in degrees. Default: {}.'.format(theta))
+    eprint(' --shrink_abs {{l}}\t\t\tShrink pad width/height by absolute amount specified in mm. Default: {}.'.format(shrinkabs))
+    eprint(' --shrink_rel {{l}}\t\t\tShrink pad width/height by relative amount specified in %. Default: {}.'.format(shrinkrel))
     eprint(' --filter {f}[,{f}]\t\t\tFilter components to include in stencil by reference. Wildcards (* and ?) can be used')
-    eprint(' --comp {l}\t\t\t\tOvercut compensation length adjustment in mm')
-    eprint(' --orientation {o}\t\t\tSet orientation (0 = portrait, 1 = landscape)')
+    eprint(' --comp {{l}}\t\t\t\tOvercut compensation length adjustment in mm. Default: {}.'.format(comp))
+    eprint(' --orientation {{o}}\t\t\tSet orientation (0 = portrait, 1 = landscape). Default: {}.'.format(orientation))
     eprint(' --pdf\t\t\t\t\tGenerate PDF of the stencil')
     sys.exit(1)
 
