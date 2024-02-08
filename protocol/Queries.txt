@@ -1,0 +1,30 @@
+Status query
+------------
+1b 05 => 32 03; {status:D1}\x03
+
+0: Ready
+1: Moving
+2: Media unloaded
+
+Tool query
+----------
+1b 15 => 20 30 2c 20 30 03; {tool1:D2},{tool2:D2}\x03
+
+Tools in pos 1:
+
+0: No tool
+1: Manual blade
+2: Auto blade
+
+Tools in pos 2:
+
+0: No tool
+4: Kraft blade
+5: Rotary blade
+
+Media sensor query
+------------------
+1b 16 => 20 20 20 31 03; {media:D4}\x03
+
+0 : No media
+1 : Media present

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+import os
 import sys
 import fnmatch
+from pathlib import Path
 
 import graphtec
 import optimize
@@ -59,7 +61,7 @@ def parse_file(file, layer, _filters, _shrinkabs, _shrinkrel):
         at = footprint.at
         footprint_center_x = at[0]
         footprint_center_y = at[1]
-        footprint_angle = (math.radians(at[2]) if len(at) > 2 else 0) - math.radians(180)
+        footprint_angle = (math.radians(at[2]) if len(at) > 2 else 0) 
 
         reference = get_reference(footprint)
 
@@ -86,15 +88,15 @@ def parse_file(file, layer, _filters, _shrinkabs, _shrinkrel):
                     bottom_left = (center_x - width / 2, center_y + height / 2)
                     bottom_right = (center_x + width / 2, center_y + height / 2)
 
-                    top_left = rotate((center_x, center_y), top_left, footprint_angle-pad_angle)
-                    top_right = rotate((center_x, center_y), top_right, footprint_angle-pad_angle)
-                    bottom_left = rotate((center_x, center_y), bottom_left, footprint_angle-pad_angle)
-                    bottom_right = rotate((center_x, center_y), bottom_right,footprint_angle-pad_angle)
+                    top_left = rotate((center_x, center_y), top_left, footprint_angle - pad_angle)
+                    top_right = rotate((center_x, center_y), top_right, footprint_angle - pad_angle)
+                    bottom_left = rotate((center_x, center_y), bottom_left, footprint_angle - pad_angle)
+                    bottom_right = rotate((center_x, center_y), bottom_right,footprint_angle - pad_angle)
                         
-                    top_left = rotate((footprint_center_x, footprint_center_y), top_left, footprint_angle)
-                    top_right = rotate((footprint_center_x, footprint_center_y), top_right, footprint_angle)
-                    bottom_left = rotate((footprint_center_x, footprint_center_y), bottom_left, footprint_angle)
-                    bottom_right = rotate((footprint_center_x, footprint_center_y), bottom_right, footprint_angle)
+                    top_left = rotate((footprint_center_x, footprint_center_y), top_left, -footprint_angle)
+                    top_right = rotate((footprint_center_x, footprint_center_y), top_right, -footprint_angle)
+                    bottom_left = rotate((footprint_center_x, footprint_center_y), bottom_left, -footprint_angle)
+                    bottom_right = rotate((footprint_center_x, footprint_center_y), bottom_right, -footprint_angle)
 
                     stroke = [
                         [top_left[0], top_left[1]],
@@ -212,8 +214,6 @@ strokes = optimize.rotate(strokes, theta)
 strokes = optimize.justify(strokes)
 max_x, max_y = optimize.max_extent(strokes)
 
-eprint('File parsed: {} pads will be cut. Stencil width {:.1f}mm, height: {:.1f}mm'.format(len(strokes), max_x+2*border[0], max_y+2*border[1]))
-
 border_path = [
     (-border[0], -border[1]),
     (max_x + border[0], -border[1]),
@@ -238,6 +238,13 @@ else:
             g.closed_path(border_path)
 
 g.end()
+
+print()
+
+sys.stdout.flush()
+
+eprint('File parsed: {} pads will be cut. Stencil width {:.1f}mm, height: {:.1f}mm'.format(len(strokes), max_x+2*border[0], max_y+2*border[1]))
+
 
 if pdf:
     from fpdf import FPDF, FPDF_VERSION
@@ -270,4 +277,6 @@ if pdf:
         pdf.line(offset_border[2][0], offset_border[2][1], offset_border[3][0], offset_border[3][1])
         pdf.line(offset_border[3][0], offset_border[3][1], offset_border[0][0], offset_border[0][1])
 
-    pdf.output(input_filename + '.pdf')
+    output_filename = os.path.join(os.getcwd(), Path(input_filename).stem+'.pdf')
+
+    pdf.output(output_filename)
