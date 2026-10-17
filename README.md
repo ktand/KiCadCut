@@ -15,10 +15,10 @@ The project uses the [kicad_parser](https://github.com/realthunder/kicad_parser)
 git submodule update --init --recursive
 ```
 
-also install
+PDF output (`--pdf`) needs [fpdf2](https://github.com/py-pdf/fpdf2):
 
 ```
-pip install FPDF
+pip install -r requirements.txt
 ```
 
 ## Basic usage

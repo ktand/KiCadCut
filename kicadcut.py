@@ -45,7 +45,12 @@ def rotate(origin, point, angle):
 
 
 def get_reference(footprint):
-    for t in footprint.fp_text:
+    # KiCad 8+ stores the reference as (property "Reference" "R1" ...)
+    for p in getattr(footprint, 'property', []):
+        if p[0].strip('\"') == 'Reference':
+            return p[1].strip('\"')
+    # KiCad 7 and earlier use (fp_text reference "R1" ...)
+    for t in getattr(footprint, 'fp_text', []):
         if t[0] == 'reference':
             return t[1].strip('\"')
     return None
@@ -134,7 +139,7 @@ while argc < len(sys.argv):
         argc = argc + 2
     elif arg == '--matrix':
         matrix = floats(sys.argv[argc + 1])
-        argc = argc + 4
+        argc = argc + 2
     elif arg == '--speed':
         speed = ints(sys.argv[argc + 1])
         argc = argc + 2
@@ -176,7 +181,7 @@ while argc < len(sys.argv):
             input_filename = sys.argv[argc]
         argc = argc + 1
 
-if not input_filename and not input_layer:
+if not input_filename or not input_layer:
     eprint('usage: kicadcut [options] <filename> <layer>')
     eprint()
     eprint(' --offset {{x}},{{y}}\t\t\tOffset stencil by x and y in mm. Default: {}.'.format(offset))
@@ -239,17 +244,20 @@ else:
 
 g.end()
 
-print()
+print(file=output_file)
 
-sys.stdout.flush()
+if output_file is sys.stdout:
+    sys.stdout.flush()
+else:
+    output_file.close()
 
 eprint('File parsed: {} pads will be cut. Stencil width {:.1f}mm, height: {:.1f}mm'.format(len(strokes), max_x+2*border[0], max_y+2*border[1]))
 
 
 if pdf:
-    from fpdf import FPDF, FPDF_VERSION
+    from fpdf import FPDF
 
-    pdf = FPDF('P' if orientation==0 else 'L', 'mm', (media_size[0], media_size[1]) if orientation==0 else (media_size[0], media_size[1]) )
+    pdf = FPDF('P' if orientation==0 else 'L', 'mm', media_size)
     pdf.add_page()
     pdf.set_line_width(0.0)
     pdf.set_margins(0.0, 0.0)
@@ -257,7 +265,6 @@ if pdf:
     pdf.set_author("https://github.com/ktand/Kicadcut")
     pdf.set_title(input_filename)
     pdf.set_subject(input_layer)
-    # pdf.set_producer("FPDF {}".format(FPDF_VERSION))
 
     lines = optimize.optimize(strokes, border)
 
