@@ -14,6 +14,7 @@ class graphtec:
     self.media_size = (12*25.4, 12*25.4)   # default of 12x12 inches
     self.comp_dist = comp_dist
     self.orientation = orientation
+    self.extent = None # (min_x, min_y, max_x, max_y) in mm of all moves/draws
 
   def emit(self, s):
     self.fd.write(s)
@@ -47,6 +48,11 @@ class graphtec:
   def transform(self, x, y):
     tx = self.matrix[0]*x + self.matrix[1]*y + self.offset[0]
     ty = self.matrix[2]*x + self.matrix[3]*y + self.offset[1]
+    if self.extent is None:
+      self.extent = (tx, ty, tx, ty)
+    else:
+      e = self.extent
+      self.extent = (min(e[0], tx), min(e[1], ty), max(e[2], tx), max(e[3], ty))
     tx = tx*self.scale
     ty = ty*self.scale
     return tx,ty

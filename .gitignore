@@ -164,6 +164,8 @@ cython_debug/
 *.out
 out.txt
 *.pdf
+*.cut
+*.plot
 
 # KiCad boards
 *.kicad_pcb

@@ -26,6 +26,7 @@ comp = 0.02
 pdf = False
 filters = []
 orientation = 0
+padding = 5
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -173,7 +174,10 @@ while argc < len(sys.argv):
         argc = argc + 2
     elif arg == '--orientation':
         orientation = int(sys.argv[argc+1])
-        argc = argc + 2        
+        argc = argc + 2
+    elif arg == '--padding':
+        padding = float(sys.argv[argc+1])
+        argc = argc + 2
     else:
         if input_filename:
             input_layer = sys.argv[argc]
@@ -197,6 +201,7 @@ if not input_filename or not input_layer:
     eprint(' --filter {f}[,{f}]\t\t\tFilter components to include in stencil by reference. Wildcards (* and ?) can be used')
     eprint(' --comp {{l}}\t\t\t\tOvercut compensation length adjustment in mm. Default: {}.'.format(comp))
     eprint(' --orientation {{o}}\t\t\tSet orientation (0 = portrait, 1 = landscape). Default: {}.'.format(orientation))
+    eprint(' --padding {{p}}\t\t\t\tPadding in mm added to the reported required media size. Default: {}.'.format(padding))
     eprint(' --pdf\t\t\t\t\tGenerate PDF of the stencil')
     sys.exit(1)
 
@@ -252,6 +257,14 @@ else:
     output_file.close()
 
 eprint('File parsed: {} pads will be cut. Stencil width {:.1f}mm, height: {:.1f}mm'.format(len(strokes), max_x+2*border[0], max_y+2*border[1]))
+
+# Cut coordinates start at the media origin, so the furthest point cut
+# (including training lines, offset and overcut) plus padding is what's needed
+required_size = (g.extent[2] + padding, g.extent[3] + padding)
+page_size = (media_size[0], media_size[1]) if orientation == 0 else (media_size[1], media_size[0])
+eprint('Required media: width {:.1f}mm, height {:.1f}mm (including training lines and {:g}mm padding)'.format(required_size[0], required_size[1], padding))
+if required_size[0] > page_size[0] or required_size[1] > page_size[1]:
+    eprint('Warning: does not fit on {} media of width {:.1f}mm, height {:.1f}mm'.format('portrait' if orientation == 0 else 'landscape', page_size[0], page_size[1]))
 
 
 if pdf:
